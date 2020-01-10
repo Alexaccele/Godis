@@ -40,12 +40,14 @@ func (s *Server) Listen(port string)  {
 			fmt.Printf(err.Error())
 			continue
 		}
+		fmt.Printf("客户端连接成功 %v\n",conn.LocalAddr())
 		go s.process(conn)
 	}
 }
 
 func (s *Server) process(conn net.Conn)  {
 	defer conn.Close()
+	defer fmt.Printf("客户端断开连接 %v\n",conn.LocalAddr())
 	reader := bufio.NewReader(conn)
 	for{
 		op, err := reader.ReadByte()
@@ -120,15 +122,14 @@ func (s *Server) readKeyAndValue(r *bufio.Reader) (string,[]byte,error) {
 //'-'开头表示出现异常,则写入<-><errLen><sp><errMessage>
 //正常应该直接写入<valueLen><sp><value>
 func sendResponse(value []byte,conn net.Conn,err error) error {
-	writer := bufio.NewWriter(conn)
 	if err!=nil{
-		writer.Write([]byte(fmt.Sprintf("-%d ")))
-		writer.Write([]byte(err.Error()))
-		return writer.Flush()
+		conn.Write([]byte(fmt.Sprintf("-%d ")))
+		_, err = conn.Write([]byte(err.Error()))
+		return err
 	}
-	writer.Write([]byte(fmt.Sprintf("%d ",len(value))))
-	writer.Write(value)
-	return writer.Flush()
+	conn.Write([]byte(fmt.Sprintf("%d ",len(value))))
+	_, err = conn.Write(value)
+	return err
 }
 
 func (s *Server) get(conn net.Conn,r *bufio.Reader) error {

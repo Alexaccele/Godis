@@ -3,5 +3,7 @@
 *.iml
 
 #test tools
-cache-benchmark
-*.sh
+cache-benchmark.bak
+
+#record file
+record.md
