@@ -2,6 +2,7 @@ package http
 
 import (
 	"Godis/cache"
+	"fmt"
 	"net/http"
 )
 
@@ -16,7 +17,7 @@ func NewServer(c cache.Cache) *Server {
 func (s *Server) Listen(port string)  {
 	http.Handle("/cache/",s.cacheHandle())
 	http.Handle("/status",s.statusHandle())
-	http.ListenAndServe(port,nil)
+	http.ListenAndServe(fmt.Sprintf(":%v",port),nil)
 }
 
 func (s *Server) cacheHandle() http.Handler {
