@@ -1,9 +1,3 @@
 #idea file
 .idea
 *.iml
-
-#test tools
-cache-benchmark.bak
-
-#record file
-record.md
