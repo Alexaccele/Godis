@@ -28,10 +28,10 @@ func NewServer(c cache.Cache) *Server {
 }
 
 func (s *Server) Listen(port string)  {
-	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%s", port))
-	listener, err := net.ListenTCP("tcp", addr)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	//listener, err := net.ListenTCP("tcp", addr)
 	if err!=nil{
-		fmt.Printf("监听端口%v失败",port)
+		fmt.Printf("监听端口%v失败\nerror:%v\n",port,err)
 		return
 	}
 	for{
