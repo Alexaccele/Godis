@@ -1,3 +1,6 @@
 #idea file
 .idea
 *.iml
+
+#db file
+*.fdb
