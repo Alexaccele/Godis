@@ -39,7 +39,8 @@ func (cache *inMemCacheWithFDB) FDB() {
 func (cache *inMemCacheWithFDB) copyToFile() {
 	cache.lock.RLock()
 	//如果缓存没变过，则不需要备份
-	if reflect.DeepEqual(cache.fileCache, cache.memCache) {
+	//TODO 判断State是否更为快速，但容忍极低概率的State相同，实际内容存在不同
+	if reflect.DeepEqual(cache.fileCache, cache.memCache) { //当数据量巨大时，判断太久
 		cache.lock.RUnlock()
 		return
 	}
