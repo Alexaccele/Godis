@@ -19,6 +19,6 @@ func (s *State) Del(k string, v []byte) {
 }
 
 //计算出占用内存
-func (s *State) Memory() uint64 {
-	return uint64(8 * (s.KeySize + s.ValueSize))
+func (s *State) Memory() int64 {
+	return 8 * (s.KeySize + s.ValueSize)
 }

@@ -14,6 +14,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -21,6 +22,11 @@ import (
 
 type Server struct {
 	cache.Cache
+}
+
+type result struct{
+	val []byte
+	err error
 }
 
 func NewServer(c cache.Cache) *Server {
@@ -31,29 +37,72 @@ func (s *Server) Listen(port string)  {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	//listener, err := net.ListenTCP("tcp", addr)
 	if err!=nil{
-		fmt.Printf("监听端口%v失败\nerror:%v\n",port,err)
+		log.Printf("监听端口%v失败\nerror:%v\n",port,err)
 		return
 	}
 	for{
 		conn, err := listener.Accept()
 		if err != nil{
-			fmt.Printf(err.Error())
+			log.Printf(err.Error())
 			continue
 		}
-		fmt.Printf("客户端连接成功 %v\n",conn.LocalAddr())
+		log.Printf("客户端连接成功 %v\n",conn.RemoteAddr())
 		go s.process(conn)
+	}
+}
+//异步处理，请求密集时能有效提高性能
+func (s *Server) processWithAsync(conn net.Conn){
+	r := bufio.NewReader(conn)
+	resultCh := make(chan chan *result,5000)
+	defer close(resultCh)
+	go reply(conn,resultCh)
+	for{
+		op, err := r.ReadByte()
+		if err!=nil{
+			if err!=io.EOF{
+				log.Printf("连接已关闭错误：%v\n",err.Error())
+			}
+			return
+		}
+		switch op {
+		case 'S':
+			s.setWithAsync(resultCh,r)
+		case 'G':
+			s.getWithAsync(resultCh,r)
+		case 'D':
+			s.delWithAsync(resultCh,r)
+		default:
+			log.Printf("错误操作%v\n",op)
+			return
+		}
+	}
+}
+
+func reply(conn net.Conn,resultCh chan chan *result){
+	defer conn.Close()
+	for{
+		c,open := <- resultCh
+		if !open{
+			return
+		}
+		r := <-c
+		err := sendResponse(r.val,conn,r.err)
+		if err != nil{
+			log.Printf("连接已关闭错误：%v\n",err.Error())
+			return
+		}
 	}
 }
 
 func (s *Server) process(conn net.Conn)  {
 	defer conn.Close()
-	defer fmt.Printf("客户端断开连接 %v\n",conn.LocalAddr())
+	defer log.Printf("客户端断开连接 %v\n",conn.RemoteAddr())
 	reader := bufio.NewReader(conn)
 	for{
 		op, err := reader.ReadByte()
 		if err!=nil{
 			if err!=io.EOF{
-				fmt.Printf("连接关闭导致错误：%v\n",err)
+				log.Printf("连接已关闭错误：%v\n",err.Error())
 			}
 			return
 		}
@@ -65,11 +114,11 @@ func (s *Server) process(conn net.Conn)  {
 		case 'D':
 			err = s.del(conn,reader)
 		default:
-			fmt.Printf("错误操作%v\n",op)
+			log.Printf("错误操作%v\n",op)
 			return
 		}
 		if err!=nil{
-			fmt.Printf(err.Error())
+			log.Printf(err.Error())
 			return
 		}
 	}
@@ -155,4 +204,44 @@ func (s *Server) del(conn net.Conn,r *bufio.Reader) error {
 		return err
 	}
 	return sendResponse(nil,conn,s.Del(key))
+}
+
+func (s *Server) getWithAsync(ch chan chan *result,r *bufio.Reader){
+	c := make(chan *result)
+	ch <- c
+	key,err := s.readKey(r)
+	if err != nil{
+		c <- &result{nil,err}
+		return
+	}
+	go func(){
+		val,err := s.Get(key)
+		c <- &result{val,err};
+	}()
+}
+
+func (s *Server) setWithAsync(ch chan chan *result,r *bufio.Reader){
+	c := make(chan *result)
+	ch <- c
+	key, val,err := s.readKeyAndValue(r)
+	if err != nil{
+		c <- &result{nil,err}
+		return
+	}
+	go func(){
+		c <- &result{nil,s.Set(key,val)};
+	}()
+}
+
+func (s *Server) delWithAsync(ch chan chan *result,r *bufio.Reader){
+	c := make(chan *result)
+	ch <- c
+	key,err := s.readKey(r)
+	if err != nil{
+		c <- &result{nil,err}
+		return
+	}
+	go func(){
+		c <- &result{nil,s.Del(key)};
+	}()
 }

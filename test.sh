@@ -19,8 +19,11 @@ elif [ "$1" == 'http' ]; then
 #http test#
   ./cache-benchmark.bak -type http -p 9090 -n 100000 -r 100000 -t set
   ./cache-benchmark.bak -type http -p 9090 -n 100000 -r 100000 -t get
+elif [ "$1" == 'redis']; then
+  ./cache-benchmark.bak -type redis -n 100000 -r 100000 -t set -c 100
+  ./cache-benchmark.bak -type redis -n 100000 -r 100000 -t get -c 100
 fi
-redis-benchmark -c 100 -n 100000 -d 1000 -t set,get -r 100000
+#redis-benchmark -c 100 -n 100000 -d 1000 -t set,get -r 100000
 
-pid=$(netstat -anp|grep 2333 |grep main|awk '{printf $7}'|cut -d/ -f1)
-kill -9 $pid
+#pid=$(netstat -anp|grep 2333 |grep main|awk '{printf $7}'|cut -d/ -f1)
+#kill -9 $pid

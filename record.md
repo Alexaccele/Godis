@@ -129,6 +129,101 @@
  100.00% <= 1 milliseconds
  44424.70 requests per second
 ```
+## 增加并发数量
+当并发量为100时
 
+```$xslt
+type is tcp
+server is localhost
+port is 2333
+total 100000 requests
+data size is 1000
+we have 100 connections
+operation is set
+keyspacelen is 100000
+pipeline length is 1
+0 records get
+0 records miss
+100000 records set
+0.692045 seconds total
+87% requests < 1 ms
+97% requests < 2 ms
+98% requests < 3 ms
+99% requests < 4 ms
+99% requests < 5 ms
+99% requests < 6 ms
+99% requests < 7 ms
+99% requests < 8 ms
+99% requests < 9 ms
+99% requests < 10 ms
+99% requests < 11 ms
+99% requests < 12 ms
+99% requests < 14 ms
+99% requests < 18 ms
+99% requests < 19 ms
+99% requests < 20 ms
+99% requests < 21 ms
+99% requests < 23 ms
+100% requests < 26 ms
+658 usec average for each request
+throughput is 144.499232 MB/s
+rps is 144499.232340
+
+type is tcp
+server is localhost
+port is 2333
+total 100000 requests
+data size is 1000
+we have 100 connections
+operation is get
+keyspacelen is 100000
+pipeline length is 1
+62908 records get
+37092 records miss
+0 records set
+0.671856 seconds total
+86% requests < 1 ms
+97% requests < 2 ms
+99% requests < 3 ms
+99% requests < 4 ms
+99% requests < 5 ms
+99% requests < 6 ms
+99% requests < 7 ms
+99% requests < 8 ms
+99% requests < 9 ms
+99% requests < 10 ms
+99% requests < 11 ms
+99% requests < 12 ms
+99% requests < 13 ms
+100% requests < 17 ms
+650 usec average for each request
+throughput is 93.633104 MB/s
+rps is 148841.330892
+
+
+====== SET ======
+  100000 requests completed in 1.14 seconds
+  100 parallel clients
+  1000 bytes payload
+  keep alive: 1
+
+89.11% <= 1 milliseconds
+97.68% <= 2 milliseconds
+99.94% <= 3 milliseconds
+100.00% <= 3 milliseconds
+87719.30 requests per second
+
+====== GET ======
+  100000 requests completed in 1.01 seconds
+  100 parallel clients
+  1000 bytes payload
+  keep alive: 1
+
+92.93% <= 1 milliseconds
+99.92% <= 2 milliseconds
+100.00% <= 2 milliseconds
+99304.87 requests per second
+```
+可以看到此时的结果，Godis的rps已经达到了14W，而Redis为8/9W
 ## 备份情况记录
 备份6万条数据耗时180ms性能很差，待优化

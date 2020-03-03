@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Godis/cache/impl"
+	"Godis/cache"
 	"Godis/http"
 	"Godis/tcp"
 	"flag"
@@ -23,12 +23,12 @@ func main() {
 	flag.Parse()
 	switch s {
 	case "tcp":
-		cache := impl.NewInMemCacheWithFDB(5)
+		cache := cache.NewInMemCacheWithFDB(5)
 		cache.LoadCacheFromFDB()
 		cache.FDB()
 		tcp.NewServer(cache).Listen(tcpPort) //tcp服务,默认的服务方式，比HTTP效率高
 	case "http":
-		http.NewServer(impl.NewInMemCache()).Listen(httpPort) //http服务
+		http.NewServer(cache.NewInMemCache(-1)).Listen(httpPort) //http服务
 	default:
 		fmt.Errorf("未支持服务类型 %v\n", s)
 		return
