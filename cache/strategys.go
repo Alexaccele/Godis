@@ -33,7 +33,7 @@ func (r *RandVolatile) MakeSpace(cache *InMemCache)  {
 	toDelCount := 10
 	count := 0
 	for k,v := range cache.memCache{
-		if v.TTL > 0{
+		if v.Value.(*entry).TTL > 0{
 			if count < toDelCount{
 				cache.Del(k)
 				count++
@@ -44,4 +44,14 @@ func (r *RandVolatile) MakeSpace(cache *InMemCache)  {
 			continue
 		}
 	}
+}
+
+/*
+LRU删除，默认策略，仅删除最后一个
+ */
+
+type LRUAll struct {}
+
+func (l *LRUAll) MakeSpace(cache *InMemCache)  {
+	cache.removeOldest()
 }

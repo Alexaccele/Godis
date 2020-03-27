@@ -18,6 +18,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Server struct {
@@ -191,11 +192,11 @@ func (s *Server) get(conn net.Conn,r *bufio.Reader) error {
 }
 
 func (s *Server) set(conn net.Conn,r *bufio.Reader) error {
-	key, value,err := s.readKeyAndValue(r)
+	key, val,err := s.readKeyAndValue(r)
 	if err!=nil {
 		return err
 	}
-	return sendResponse(nil,conn,s.Set(key,value))
+	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),0}))
 }
 
 func (s *Server) del(conn net.Conn,r *bufio.Reader) error {
@@ -229,7 +230,7 @@ func (s *Server) setWithAsync(ch chan chan *result,r *bufio.Reader){
 		return
 	}
 	go func(){
-		c <- &result{nil,s.Set(key,val)};
+		c <- &result{nil,s.Set(key,cache.Value{val,time.Now(),0})};
 	}()
 }
 

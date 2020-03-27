@@ -23,7 +23,7 @@ func main() {
 	flag.Parse()
 	switch s {
 	case "tcp":
-		cache := cache.NewInMemCacheWithFDB(5)
+		cache := cache.NewInMemCacheWithFDB(5,0,30)//持久化周期5s,0表示无内存限制，30s默认检查过期时间
 		cache.LoadCacheFromFDB()
 		cache.FDB()
 		tcp.NewServer(cache).Listen(tcpPort) //tcp服务,默认的服务方式，比HTTP效率高

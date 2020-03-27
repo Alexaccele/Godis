@@ -1,9 +1,11 @@
 package http
 
 import (
+	"Godis/cache"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type cacheHandle struct {
@@ -30,7 +32,7 @@ func (c *cacheHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = c.Set(key, bytes)
+		err = c.Set(key, cache.Value{bytes,time.Now(),0})
 		if err!=nil{
 			w.WriteHeader(http.StatusInternalServerError)
 		}
