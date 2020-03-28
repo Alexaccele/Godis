@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"strconv"
 	"strings"
@@ -47,7 +48,7 @@ func (s *Server) Listen(port string)  {
 			log.Printf(err.Error())
 			continue
 		}
-		log.Printf("客户端连接成功 %v\n",conn.RemoteAddr())
+		//log.Printf("客户端连接成功 %v\n",conn.RemoteAddr())
 		go s.process(conn)
 	}
 }
@@ -61,7 +62,7 @@ func (s *Server) processWithAsync(conn net.Conn){
 		op, err := r.ReadByte()
 		if err!=nil{
 			if err!=io.EOF{
-				log.Printf("连接已关闭错误：%v\n",err.Error())
+				//log.Printf("连接已关闭错误：%v\n",err.Error())
 			}
 			return
 		}
@@ -89,7 +90,7 @@ func reply(conn net.Conn,resultCh chan chan *result){
 		r := <-c
 		err := sendResponse(r.val,conn,r.err)
 		if err != nil{
-			log.Printf("连接已关闭错误：%v\n",err.Error())
+			//log.Printf("连接已关闭错误：%v\n",err.Error())
 			return
 		}
 	}
@@ -97,13 +98,13 @@ func reply(conn net.Conn,resultCh chan chan *result){
 
 func (s *Server) process(conn net.Conn)  {
 	defer conn.Close()
-	defer log.Printf("客户端断开连接 %v\n",conn.RemoteAddr())
+	//defer log.Printf("客户端断开连接 %v\n",conn.RemoteAddr())
 	reader := bufio.NewReader(conn)
 	for{
 		op, err := reader.ReadByte()
 		if err!=nil{
 			if err!=io.EOF{
-				log.Printf("连接已关闭错误：%v\n",err.Error())
+				//log.Printf("连接已关闭错误：%v\n",err.Error())
 			}
 			return
 		}
@@ -196,7 +197,7 @@ func (s *Server) set(conn net.Conn,r *bufio.Reader) error {
 	if err!=nil {
 		return err
 	}
-	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),0}))
+	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),time.Second*time.Duration(10+rand.Intn(20))}))//TODO 过期参数可配置化
 }
 
 func (s *Server) del(conn net.Conn,r *bufio.Reader) error {

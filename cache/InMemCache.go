@@ -26,11 +26,11 @@ type InMemCache struct {
 	evictList *list.List 		//LRU维护链表
 	memCache map[string]*list.Element
 	State
-	memoryThreshold int64        //内存限制，0表示没有内存限制，单位字节Byte
-	expireCycle     time.Duration //定期删除过期键值对周期
+	memoryThreshold int64         //内存限制，0表示没有内存限制，单位字节Byte
+	ExpireCycle     time.Duration //定期删除过期键值对周期
 	strategy        ExpireStrategy
 }
-//TODO 查看每次get测试后，很多数据变为null的问题
+
 func (i *InMemCache) Get(k string) ([]byte, error) {
 	//由于涉及到修改LRU链表，故加写锁，防止并发环境下，多协程修改节点位置导致内容丢失
 	i.lock.Lock()
@@ -52,7 +52,7 @@ func (i *InMemCache) Get(k string) ([]byte, error) {
 	return nil,nil
 }
 
-//默认SET不过期
+//SET操作只做存储，具体是否过期，应该由调用的上层接口定义
 func (i *InMemCache) Set(k string, v Value) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -138,10 +138,10 @@ func NewInMemCache(expireCycle time.Duration) *InMemCache {
 		lock:        sync.RWMutex{},
 		memCache:    make(map[string]*list.Element),
 		State:       State{},
-		expireCycle: expireCycle,
+		ExpireCycle: expireCycle,
 	}
 	if expireCycle > 0{
-		go i.expirer()
+		go i.Expirer()
 	}
 	return i
 }
@@ -149,23 +149,23 @@ func NewInMemCache(expireCycle time.Duration) *InMemCache {
 func NewInMemCacheWithMemoryThreshold(memoryThreshold int64, expireCycle time.Duration) *InMemCache {
 	i := &InMemCache{
 		lock:            sync.RWMutex{},
-		evictList:		 list.New(),
+		evictList:       list.New(),
 		memCache:        make(map[string]*list.Element),
 		State:           State{},
 		memoryThreshold: memoryThreshold,
-		expireCycle:     expireCycle,
+		ExpireCycle:     expireCycle,
 		strategy:        &LRUAll{},
 	}
-	if expireCycle > 0{
-		go i.expirer()
-	}
+	//if expireCycle > 0{
+	//	go i.Expirer()
+	//}
 	return i
 }
 
 //定期删除过期键值对
-func (cache *InMemCache) expirer()  {
+func (cache *InMemCache) Expirer()  {
 	for{
-		time.Sleep(cache.expireCycle) //休眠
+		time.Sleep(cache.ExpireCycle) //休眠
 		cache.lock.RLock()
 		for k,v := range cache.memCache{
 			cache.lock.RUnlock()
@@ -179,7 +179,7 @@ func (cache *InMemCache) expirer()  {
 	}
 }
 
-//TODO debug发现拷贝没有完全拷贝，但缓存中还存在数据
+
 //返回从尾到头的顺序，用于恢复数据时，Set后能与原顺序保持一致
 func (i *InMemCache) KeysAndValues() ([]string,[]Value) {
 	i.lock.RLock()

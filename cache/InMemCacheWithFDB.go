@@ -49,8 +49,8 @@ func (cache *InMemCacheWithFDB) copyMem(){
 //<keyCount> <keyLen> <valueLen> <key><Value><keyLen> <valueLen> <key><Value>
 //例如：
 //2 2 3 kyval3 5 keyvalue
-//TODO 后期考虑增量替换，提高持久化性能
-//TODO 解决备份文件在没有设置内存限制与数据淘汰时，文件越来越小的问题
+
+//(已解决，原因Get操作需要修改LRU链表，需加写锁) 解决备份文件在没有设置内存限制与数据淘汰时，文件越来越小的问题
 func (cache *InMemCacheWithFDB) copyToFile() {
 	cache.fdbDuring = true
 	defer func() {
@@ -95,7 +95,7 @@ func (cache *InMemCacheWithFDB) copyToFile() {
 		log.Println("rename : 替换备份文件失败")
 		return
 	}
-	log.Printf("备份耗时：%v,备份%v组数据\n", time.Since(start),cache.State.Count)
+	log.Printf("备份耗时：%v,备份%v组数据\n", time.Since(start),count)
 }
 
 //从FDB文件中加载缓存数据，会同时保存到缓存和快照
@@ -148,7 +148,7 @@ func (cache *InMemCacheWithFDB) LoadCacheFromFDB() {
 		cache.Set(string(key),Value{[]byte(v.Val),v.Created,v.TTL})
 		//log.Printf("当前count:%v,当前缓存大小%v,",i,len(cache.memCache))
 	}
-	//TODO bug:当加载数据很大时，加载的数据量与缓存中的数据量不一致
+	//（已解决，原因拷贝时数据拷贝不完整，是由于Get操作修改LRU链表需要加写锁） bug:当加载数据很大时，加载的数据量与缓存中的数据量不一致
 	//查看dump文件，发现最后很多数据记录为null等默认零值，并且每次发生在get测试后，备份数据就开始出现很多null值
 	log.Printf("加载dump.fdb文件内容成功，加载了%v组数据，此时缓存中数据%v，加载耗时%v\n", count,cache.State.Count,time.Since(start))
 }
