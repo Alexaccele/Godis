@@ -11,11 +11,11 @@ package tcp
  */
 import (
 	"Godis/cache"
+	"Godis/config"
 	"bufio"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net"
 	"strconv"
 	"strings"
@@ -197,7 +197,7 @@ func (s *Server) set(conn net.Conn,r *bufio.Reader) error {
 	if err!=nil {
 		return err
 	}
-	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),time.Second*time.Duration(10+rand.Intn(20))}))//TODO 过期参数可配置化
+	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),time.Second*time.Duration(config.Config.ExpireStrategy.DefaultExpireTime)}))//TODO 过期时间指令化
 }
 
 func (s *Server) del(conn net.Conn,r *bufio.Reader) error {

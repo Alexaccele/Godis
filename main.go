@@ -2,6 +2,7 @@ package main
 
 import (
 	"Godis/cache"
+	"Godis/config"
 	"Godis/http"
 	"Godis/tcp"
 	"flag"
@@ -21,17 +22,20 @@ func init() {
 }
 func main() {
 	flag.Parse()
-	switch s {
+	cache := cache.NewInMemCacheWithFDB(config.Config.FDB.FDBDuration,
+		1<<20*config.Config.ExpireStrategy.MemoryThreshold,
+		config.Config.ExpireStrategy.ExpireCycle,
+		cache.NewExpireStrategy(config.Config.ExpireStrategy.Strategy)) //持久化周期5s,0表示无内存限制，30s默认检查过期时间
+	cache.LoadCacheFromFDB()
+	cache.FDB()
+	if cache.ExpireCycle > 0 {
+		go cache.Expirer()
+	}
+	switch config.Config.Service.ServiceType {
 	case "tcp":
-		cache := cache.NewInMemCacheWithFDB(5,0,10)//持久化周期5s,0表示无内存限制，30s默认检查过期时间
-		cache.LoadCacheFromFDB()
-		cache.FDB()
-		if cache.ExpireCycle > 0 {
-			go cache.Expirer()
-		}
-		tcp.NewServer(cache).Listen(tcpPort) //tcp服务,默认的服务方式，比HTTP效率高
+		tcp.NewServer(cache).Listen(config.Config.Service.Port) //tcp服务,默认的服务方式，比HTTP效率高
 	case "http":
-		http.NewServer(cache.NewInMemCache(-1)).Listen(httpPort) //http服务
+		http.NewServer(cache).Listen(config.Config.Service.Port) //http服务
 	default:
 		fmt.Errorf("未支持服务类型 %v\n", s)
 		return

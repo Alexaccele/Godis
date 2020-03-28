@@ -161,8 +161,8 @@ func readLen(reader *bufio.Reader) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(readString))
 }
 
-func NewInMemCacheWithFDB(fdbDuration int64,memoryThreshold int64, expireCycle time.Duration) *InMemCacheWithFDB {
-	mem := NewInMemCacheWithMemoryThreshold(memoryThreshold,expireCycle)
+func NewInMemCacheWithFDB(fdbDuration int64,memoryThreshold int64, expireCycle time.Duration,strategy ExpireStrategy) *InMemCacheWithFDB {
+	mem := NewInMemCacheWithMemoryThreshold(memoryThreshold,expireCycle,strategy)
 	return &InMemCacheWithFDB{
 		InMemCache: *mem,
 		fdbDuration: fdbDuration,

@@ -55,3 +55,14 @@ type LRUAll struct {}
 func (l *LRUAll) MakeSpace(cache *InMemCache)  {
 	cache.removeOldest()
 }
+
+func NewExpireStrategy(strategy string) ExpireStrategy{
+	switch strategy {
+	case "RandAll":
+		return &RandAll{}
+	case "RandVolatile":
+		return &RandVolatile{}
+	default:
+		return &LRUAll{}
+	}
+}

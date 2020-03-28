@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 /*
@@ -130,7 +131,7 @@ func (i *InMemCache) GetState() State {
 }
 
 func (i *InMemCache) checkMemory(k string, v []byte) bool {
-	return i.memoryThreshold == 0 || i.State.Memory()+int64(len(k))+int64(len(v)) < i.memoryThreshold
+	return i.memoryThreshold == 0 || i.State.Memory()+int64(unsafe.Sizeof(v)+unsafe.Sizeof(k)) < i.memoryThreshold
 }
 
 func NewInMemCache(expireCycle time.Duration) *InMemCache {
@@ -146,7 +147,7 @@ func NewInMemCache(expireCycle time.Duration) *InMemCache {
 	return i
 }
 
-func NewInMemCacheWithMemoryThreshold(memoryThreshold int64, expireCycle time.Duration) *InMemCache {
+func NewInMemCacheWithMemoryThreshold(memoryThreshold int64, expireCycle time.Duration,strategy ExpireStrategy) *InMemCache {
 	i := &InMemCache{
 		lock:            sync.RWMutex{},
 		evictList:       list.New(),
@@ -154,7 +155,7 @@ func NewInMemCacheWithMemoryThreshold(memoryThreshold int64, expireCycle time.Du
 		State:           State{},
 		memoryThreshold: memoryThreshold,
 		ExpireCycle:     expireCycle,
-		strategy:        &LRUAll{},
+		strategy:        strategy,
 	}
 	//if expireCycle > 0{
 	//	go i.Expirer()
@@ -165,7 +166,7 @@ func NewInMemCacheWithMemoryThreshold(memoryThreshold int64, expireCycle time.Du
 //定期删除过期键值对
 func (cache *InMemCache) Expirer()  {
 	for{
-		time.Sleep(cache.ExpireCycle) //休眠
+		time.Sleep(cache.ExpireCycle * time.Second) //休眠
 		cache.lock.RLock()
 		for k,v := range cache.memCache{
 			cache.lock.RUnlock()
