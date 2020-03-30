@@ -5,7 +5,9 @@
 service_type= "tcp"
 
 ##服务端口号##
-port = "2333"
+tcp-port = "2333"
+
+http-port = "9090"
 
 ##过期策略##
 [ExpireStrategy]

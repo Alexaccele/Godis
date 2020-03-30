@@ -27,7 +27,7 @@ func (c *tcpClient) sendSet(key, value string) {
 	c.Write([]byte(fmt.Sprintf("S%d %d %s%s", klen, vlen, key, value)))
 }
 
-func (c *tcpClient) sendSetWithTime(key, value,expireTime string) {
+func (c *tcpClient) sendSetWithTime(key, value, expireTime string) {
 	klen := len(key)
 	vlen := len(value)
 	timeLen := len(expireTime)
@@ -90,8 +90,8 @@ func (c *tcpClient) Run(cmd *Cmd) {
 		_, cmd.Error = c.recvResponse()
 		return
 	}
-	if cmd.Name == "setT"{
-		c.sendSetWithTime(cmd.Key,cmd.Value,cmd.ExpireTime)
+	if cmd.Name == "setT" {
+		c.sendSetWithTime(cmd.Key, cmd.Value, cmd.ExpireTime)
 		_, cmd.Error = c.recvResponse()
 		return
 	}
@@ -112,8 +112,8 @@ func (c *tcpClient) PipelinedRun(cmds []*Cmd) {
 		if cmd.Name == "del" {
 			c.sendDel(cmd.Key)
 		}
-		if cmd.Name == "setT"{
-			c.sendSetWithTime(cmd.Key,cmd.Value,cmd.ExpireTime)
+		if cmd.Name == "setT" {
+			c.sendSetWithTime(cmd.Key, cmd.Value, cmd.ExpireTime)
 		}
 	}
 	for _, cmd := range cmds {
@@ -121,7 +121,7 @@ func (c *tcpClient) PipelinedRun(cmds []*Cmd) {
 	}
 }
 
-func newTCPClient(server ,port string) *tcpClient {
+func newTCPClient(server, port string) *tcpClient {
 	c, e := net.Dial("tcp", server+":"+port)
 	if e != nil {
 		panic(e)

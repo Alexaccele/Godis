@@ -9,7 +9,8 @@ import (
 //服务类型配置
 type ServiceConfig struct {
 	ServiceType string `toml:"service_type"`
-	Port        string
+	TcpPort     string `toml:"tcp-port"`
+	HttpPort    string `toml:"http-port"`
 }
 
 //过期策略配置
@@ -34,7 +35,7 @@ type GlobalConfig struct {
 var Config GlobalConfig
 
 func init() {
-	if _, err := toml.DecodeFile("Config.toml", &Config); err != nil {
+	if _, err := toml.DecodeFile("config.toml", &Config); err != nil {
 		log.Fatalf("读取配置文件config.toml失败,error:%v", err)
 	}
 }

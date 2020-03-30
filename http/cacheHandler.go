@@ -17,29 +17,29 @@ func (c *cacheHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		bytes, err := c.Get(key)
-		if err != nil{
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if len(bytes) == 0{
+		if len(bytes) == 0 {
 			w.WriteHeader(http.StatusNotFound)
 		}
 		w.Write(bytes)
 		return
 	case http.MethodPut:
 		bytes, err := ioutil.ReadAll(r.Body)
-		if err!=nil || len(bytes)==0{
+		if err != nil || len(bytes) == 0 {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = c.Set(key, cache.Value{bytes,time.Now(),0})//http服务方式不支持设置过期时间
-		if err!=nil{
+		err = c.Set(key, cache.Value{bytes, time.Now(), 0}) //http服务方式不支持设置过期时间
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
 	case http.MethodDelete:
 		err := c.Del(key)
-		if err!=nil{
+		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
@@ -47,5 +47,3 @@ func (c *cacheHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
-
-

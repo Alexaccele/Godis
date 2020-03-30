@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 )
+
 /*
 临时结构体，用于json解析避免[]byte类型解析错误，而临时使用string类型辅助解析
- */
+*/
 type tempValue struct {
 	Val     string
 	Created time.Time
@@ -22,29 +23,30 @@ type tempValue struct {
 }
 type InMemCacheWithFDB struct {
 	InMemCache
-	fdbDuration int64            //持久化间隔
-	fdbDuring 	bool            //是否正在做持久化的标志
+	fdbDuration int64 //持久化间隔
+	fdbDuring   bool  //是否正在做持久化的标志
 	//快照用于辅助磁盘存储，键值对位置一一对应
-	fileKeys    []string
-	fileValues	[]Value
+	fileKeys   []string
+	fileValues []Value
 }
 
 func (cache *InMemCacheWithFDB) FDB() {
 	ticker := time.NewTicker(time.Duration(cache.fdbDuration) * time.Second)
 	times := ticker.C
 	go func() {
-		for t := range times {
-			log.Printf("持久化时间周期 %v\n", t)
-			if !cache.fdbDuring{
+		for _ = range times {
+			//log.Printf("持久化时间周期 %v\n", t)
+			if !cache.fdbDuring {
 				cache.copyToFile()
 			}
 		}
 	}()
 }
 
-func (cache *InMemCacheWithFDB) copyMem(){
-	cache.fileKeys,cache.fileValues = cache.KeysAndValues()
+func (cache *InMemCacheWithFDB) copyMem() {
+	cache.fileKeys, cache.fileValues = cache.KeysAndValues()
 }
+
 //fdb file 格式：
 //<keyCount> <keyLen> <valueLen> <key><Value><keyLen> <valueLen> <key><Value>
 //例如：
@@ -67,35 +69,39 @@ func (cache *InMemCacheWithFDB) copyToFile() {
 	start := time.Now()
 	//拷贝快照
 	cache.copyMem()
-	log.Printf("当前快照keys:%v,当前快照values:%v,当前State:%v",len(cache.fileKeys),len(cache.fileValues),cache.State.Count)
+	//log.Printf("当前快照keys:%v,当前快照values:%v,当前State:%v", len(cache.fileKeys), len(cache.fileValues), cache.State.Count)
 	//写文件
 	count := len(cache.fileKeys)
 	w.Write([]byte(strconv.Itoa(count) + " "))
-	for i:=0;i<count;i++ {
+	for i := 0; i < count; i++ {
 		k := cache.fileKeys[i]
 		v := cache.fileValues[i]
-		values, _ := json.Marshal(v)//value结构体转json存储
-		if len(k) == 0 || v.Val == nil{
+		var tempV tempValue
+		tempV.Val = string(v.Val)
+		tempV.TTL = v.TTL
+		tempV.Created = v.Created
+		values, _ := json.Marshal(tempV) //value结构体转json存储
+		if len(k) == 0 || v.Val == nil {
 			continue
 		}
-		w.Write([]byte(fmt.Sprintf("%v %v %v%v", len(k), len(values),k, string(values))))
+		w.Write([]byte(fmt.Sprintf("%v %v %v%v", len(k), len(values), k, string(values))))
 	}
 	w.Flush()
 	cache.fileKeys = cache.fileKeys[0:0] //交由GC回收，清空快照
 	cache.fileValues = cache.fileValues[0:0]
-	file.Close()//关闭文件描述符，否则无法删除文件并替换
+	file.Close() //关闭文件描述符，否则无法删除文件并替换
 	//备份文件替换
 	err = os.Remove("dump.fdb")
-	if err!=nil{
-		log.Printf("remove : 替换备份文件失败,error : %v",err)
+	if err != nil {
+		log.Printf("remove : 替换备份文件失败,error : %v", err)
 		return
 	}
 	err = os.Rename("dump.fdb.bak", "dump.fdb")
-	if err!=nil{
+	if err != nil {
 		log.Println("rename : 替换备份文件失败")
 		return
 	}
-	log.Printf("备份耗时：%v,备份%v组数据\n", time.Since(start),count)
+	log.Printf("备份耗时：%v,备份%v组数据\n", time.Since(start), count)
 }
 
 //从FDB文件中加载缓存数据，会同时保存到缓存和快照
@@ -144,13 +150,13 @@ func (cache *InMemCacheWithFDB) LoadCacheFromFDB() {
 			return
 		}
 		var v tempValue
-		json.Unmarshal(val,&v)
-		cache.Set(string(key),Value{[]byte(v.Val),v.Created,v.TTL})
+		json.Unmarshal(val, &v)
+		cache.Set(string(key), Value{[]byte(v.Val), v.Created, v.TTL})
 		//log.Printf("当前count:%v,当前缓存大小%v,",i,len(cache.memCache))
 	}
 	//（已解决，原因拷贝时数据拷贝不完整，是由于Get操作修改LRU链表需要加写锁） bug:当加载数据很大时，加载的数据量与缓存中的数据量不一致
 	//查看dump文件，发现最后很多数据记录为null等默认零值，并且每次发生在get测试后，备份数据就开始出现很多null值
-	log.Printf("加载dump.fdb文件内容成功，加载了%v组数据，此时缓存中数据%v，加载耗时%v\n", count,cache.State.Count,time.Since(start))
+	log.Printf("加载dump.fdb文件内容成功，加载了%v组数据，此时缓存中数据%v，加载耗时%v\n", count, cache.State.Count, time.Since(start))
 }
 
 func readLen(reader *bufio.Reader) (int, error) {
@@ -161,12 +167,12 @@ func readLen(reader *bufio.Reader) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(readString))
 }
 
-func NewInMemCacheWithFDB(fdbDuration int64,memoryThreshold int64, expireCycle time.Duration,strategy ExpireStrategy) *InMemCacheWithFDB {
-	mem := NewInMemCacheWithMemoryThreshold(memoryThreshold,expireCycle,strategy)
+func NewInMemCacheWithFDB(fdbDuration int64, memoryThreshold int64, expireCycle time.Duration, strategy ExpireStrategy) *InMemCacheWithFDB {
+	mem := NewInMemCacheWithMemoryThreshold(memoryThreshold, expireCycle, strategy)
 	return &InMemCacheWithFDB{
-		InMemCache: *mem,
+		InMemCache:  *mem,
 		fdbDuration: fdbDuration,
-		fdbDuring:	false,
+		fdbDuring:   false,
 		//fileCache 不初始化，当第一次备份时复制memCache
 		//fileCache:   make(map[string][]byte),
 	}

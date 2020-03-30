@@ -44,8 +44,8 @@ func (r *redisClient) Run(c *Cmd) {
 		c.Error = r.del(c.Key)
 		return
 	}
-	if c.Name == "setT"{
-		c.Error = r.setWithTime(c.Key, c.Value,c.ExpireTime)
+	if c.Name == "setT" {
+		c.Error = r.setWithTime(c.Key, c.Value, c.ExpireTime)
 		return
 	}
 	panic("unknown cmd name " + c.Name)
@@ -64,10 +64,10 @@ func (r *redisClient) PipelinedRun(cmds []*Cmd) {
 			cmders[i] = pipe.Set(c.Key, c.Value, 0)
 		} else if c.Name == "del" {
 			cmders[i] = pipe.Del(c.Key)
-		} else if c.Name == "setT"{
+		} else if c.Name == "setT" {
 			expire, _ := strconv.Atoi(c.ExpireTime)
 			cmders[i] = pipe.Set(c.Key, c.Value, time.Duration(expire)*time.Second)
-		}else {
+		} else {
 			panic("unknown cmd name " + c.Name)
 		}
 	}

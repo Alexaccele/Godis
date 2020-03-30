@@ -95,7 +95,7 @@ func pipeline(client cacheClient.Client, cmds []*cacheClient.Cmd, r *result) {
 }
 
 func operate(id, count int, ch chan *result) {
-	client := cacheClient.New(typ, server,port)
+	client := cacheClient.New(typ, server, port)
 	cmds := make([]*cacheClient.Cmd, 0)
 	valuePrefix := strings.Repeat("a", valueSize)
 	r := &result{0, 0, 0, make([]statistic, 0)}
@@ -108,7 +108,7 @@ func operate(id, count int, ch chan *result) {
 		}
 		key := fmt.Sprintf("%d", tmp)
 		value := fmt.Sprintf("%s%d", valuePrefix, tmp)
-		expire := fmt.Sprintf("%d",tmp%30)
+		expire := fmt.Sprintf("%d", tmp%30)
 		name := operation
 		if operation == "mixed" {
 			if rand.Intn(2) == 1 {
@@ -117,7 +117,7 @@ func operate(id, count int, ch chan *result) {
 				name = "get"
 			}
 		}
-		c := &cacheClient.Cmd{name, key, value, expire,nil}
+		c := &cacheClient.Cmd{name, key, value, expire, nil}
 		if pipelen > 1 {
 			cmds = append(cmds, c)
 			if len(cmds) == pipelen {
@@ -134,13 +134,13 @@ func operate(id, count int, ch chan *result) {
 	ch <- r
 }
 
-var typ, server,port, operation string
+var typ, server, port, operation string
 var total, valueSize, threads, keyspacelen, pipelen int
 
 func init() {
 	flag.StringVar(&typ, "type", "redis", "cache server type")
 	flag.StringVar(&server, "h", "localhost", "cache server address")
-	flag.StringVar(&port,"p","2333","server port")
+	flag.StringVar(&port, "p", "2333", "server port")
 	flag.IntVar(&total, "n", 1000, "total number of requests")
 	flag.IntVar(&valueSize, "d", 1000, "data size of SET/GET value in bytes")
 	flag.IntVar(&threads, "c", 1, "number of parallel connections")

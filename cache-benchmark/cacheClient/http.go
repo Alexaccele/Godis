@@ -60,9 +60,9 @@ func (c *httpClient) Run(cmd *Cmd) {
 	panic("unknown cmd name " + cmd.Name)
 }
 
-func newHTTPClient(server,port string) *httpClient {
+func newHTTPClient(server, port string) *httpClient {
 	client := &http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: 1}}
-	return &httpClient{client, "http://" + server + ":"+port+"/cache/"}
+	return &httpClient{client, "http://" + server + ":" + port + "/cache/"}
 }
 
 func (c *httpClient) PipelinedRun([]*Cmd) {
