@@ -3,6 +3,7 @@ package tcp
 	TCP传输规定
 	格式： op<keyLen><sp><vauleLen><sp><key><value>
 	op表示操作，S|G|D 分别表示Set操作，Get操作，Del操作
+	新增操作  T3 5 2 <key><value><expiretime>带过期时间的Set
 	<sp>表示空格
 	<keyLen>表示传输的key的字长
 	例如： S3 5 keyvalue 表示Set key vaule
@@ -73,6 +74,8 @@ func (s *Server) processWithAsync(conn net.Conn){
 			s.getWithAsync(resultCh,r)
 		case 'D':
 			s.delWithAsync(resultCh,r)
+		case 'T':
+			s.setWithTimeWithAsync(resultCh,r)
 		default:
 			log.Printf("错误操作%v\n",op)
 			return
@@ -115,6 +118,8 @@ func (s *Server) process(conn net.Conn)  {
 			err = s.get(conn,reader)
 		case 'D':
 			err = s.del(conn,reader)
+		case 'T':
+			err = s.setWithTime(conn,reader)
 		default:
 			log.Printf("错误操作%v\n",op)
 			return
@@ -200,6 +205,14 @@ func (s *Server) set(conn net.Conn,r *bufio.Reader) error {
 	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),time.Second*time.Duration(config.Config.ExpireStrategy.DefaultExpireTime)}))//TODO 过期时间指令化
 }
 
+func (s *Server) setWithTime(conn net.Conn,r *bufio.Reader) error{
+	key,val,expireTime,err := s.readKeyAndValueAndTime(r)
+	if err!=nil{
+		return err
+	}
+	return sendResponse(nil,conn,s.Set(key,cache.Value{val,time.Now(),time.Second*expireTime}))
+}
+
 func (s *Server) del(conn net.Conn,r *bufio.Reader) error {
 	key, err := s.readKey(r)
 	if err!=nil{
@@ -235,6 +248,19 @@ func (s *Server) setWithAsync(ch chan chan *result,r *bufio.Reader){
 	}()
 }
 
+func (s *Server) setWithTimeWithAsync(ch chan chan *result,r *bufio.Reader){
+	c := make(chan *result)
+	ch <- c
+	key, val,expireTime,err := s.readKeyAndValueAndTime(r)
+	if err != nil{
+		c <- &result{nil,err}
+		return
+	}
+	go func(){
+		c <- &result{nil,s.Set(key,cache.Value{val,time.Now(),expireTime})};
+	}()
+}
+
 func (s *Server) delWithAsync(ch chan chan *result,r *bufio.Reader){
 	c := make(chan *result)
 	ch <- c
@@ -246,4 +272,39 @@ func (s *Server) delWithAsync(ch chan chan *result,r *bufio.Reader){
 	go func(){
 		c <- &result{nil,s.Del(key)};
 	}()
+}
+
+func (s *Server) readKeyAndValueAndTime(r *bufio.Reader) (string, []byte, time.Duration,error) {
+	keyLen, err := readLen(r)
+	if err!=nil{
+		return "",nil,-1,err
+	}
+	valueLen, err := readLen(r)
+	if err!=nil{
+		return "",nil,-1,err
+	}
+	timeLen,err := readLen(r)
+	if err!=nil{
+		return "",nil,-1,err
+	}
+	key := make([]byte,keyLen)
+	value := make([]byte,valueLen)
+	t := make([]byte,timeLen)
+	n, err := io.ReadFull(r, key)
+	if err!=nil||n!=keyLen{
+		return "",nil,-1,err
+	}
+	n, err = io.ReadFull(r, value)
+	if err!=nil||n!=valueLen{
+		return "",nil,-1,err
+	}
+	n, err = io.ReadFull(r, t)
+	if err!=nil||n!=valueLen{
+		return "",nil,-1,err
+	}
+	expireTime, err := strconv.Atoi(string(t))
+	if err != nil || expireTime < 0{
+		return "",nil,-1,err
+	}
+	return string(key),value,time.Duration(expireTime),nil
 }

@@ -32,7 +32,7 @@ func (c *cacheHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = c.Set(key, cache.Value{bytes,time.Now(),0})
+		err = c.Set(key, cache.Value{bytes,time.Now(),0})//http服务方式不支持设置过期时间
 		if err!=nil{
 			w.WriteHeader(http.StatusInternalServerError)
 		}

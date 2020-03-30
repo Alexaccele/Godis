@@ -108,6 +108,7 @@ func operate(id, count int, ch chan *result) {
 		}
 		key := fmt.Sprintf("%d", tmp)
 		value := fmt.Sprintf("%s%d", valuePrefix, tmp)
+		expire := fmt.Sprintf("%d",tmp%30)
 		name := operation
 		if operation == "mixed" {
 			if rand.Intn(2) == 1 {
@@ -116,7 +117,7 @@ func operate(id, count int, ch chan *result) {
 				name = "get"
 			}
 		}
-		c := &cacheClient.Cmd{name, key, value, nil}
+		c := &cacheClient.Cmd{name, key, value, expire,nil}
 		if pipelen > 1 {
 			cmds = append(cmds, c)
 			if len(cmds) == pipelen {
@@ -189,4 +190,5 @@ func main() {
 	fmt.Printf("%d usec average for each request\n", int64(statTimeSum/time.Microsecond)/int64(statCountSum))
 	fmt.Printf("throughput is %f MB/s\n", float64((res.getCount+res.setCount)*valueSize)/1e6/d.Seconds())
 	fmt.Printf("rps is %f\n", float64(totalCount)/float64(d.Seconds()))
+	fmt.Println("==========================")
 }

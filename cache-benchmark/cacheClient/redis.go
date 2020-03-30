@@ -2,6 +2,8 @@ package cacheClient
 
 import (
 	"github.com/go-redis/redis"
+	"strconv"
+	"time"
 )
 
 type redisClient struct {
@@ -18,6 +20,11 @@ func (r *redisClient) get(key string) (string, error) {
 
 func (r *redisClient) set(key, value string) error {
 	return r.Set(key, value, 0).Err()
+}
+
+func (r *redisClient) setWithTime(key, value, expireTime string) error {
+	expire, _ := strconv.Atoi(expireTime)
+	return r.Set(key, value, time.Duration(expire)*time.Second).Err()
 }
 
 func (r *redisClient) del(key string) error {
@@ -37,6 +44,10 @@ func (r *redisClient) Run(c *Cmd) {
 		c.Error = r.del(c.Key)
 		return
 	}
+	if c.Name == "setT"{
+		c.Error = r.setWithTime(c.Key, c.Value,c.ExpireTime)
+		return
+	}
 	panic("unknown cmd name " + c.Name)
 }
 
@@ -53,7 +64,10 @@ func (r *redisClient) PipelinedRun(cmds []*Cmd) {
 			cmders[i] = pipe.Set(c.Key, c.Value, 0)
 		} else if c.Name == "del" {
 			cmders[i] = pipe.Del(c.Key)
-		} else {
+		} else if c.Name == "setT"{
+			expire, _ := strconv.Atoi(c.ExpireTime)
+			cmders[i] = pipe.Set(c.Key, c.Value, time.Duration(expire)*time.Second)
+		}else {
 			panic("unknown cmd name " + c.Name)
 		}
 	}

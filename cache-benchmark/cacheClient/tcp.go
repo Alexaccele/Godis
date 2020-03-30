@@ -27,6 +27,13 @@ func (c *tcpClient) sendSet(key, value string) {
 	c.Write([]byte(fmt.Sprintf("S%d %d %s%s", klen, vlen, key, value)))
 }
 
+func (c *tcpClient) sendSetWithTime(key, value,expireTime string) {
+	klen := len(key)
+	vlen := len(value)
+	timeLen := len(expireTime)
+	c.Write([]byte(fmt.Sprintf("T%d %d %d%s%s%s", klen, vlen, timeLen, key, value, expireTime)))
+}
+
 func (c *tcpClient) sendDel(key string) {
 	klen := len(key)
 	c.Write([]byte(fmt.Sprintf("D%d %s", klen, key)))
@@ -83,6 +90,11 @@ func (c *tcpClient) Run(cmd *Cmd) {
 		_, cmd.Error = c.recvResponse()
 		return
 	}
+	if cmd.Name == "setT"{
+		c.sendSetWithTime(cmd.Key,cmd.Value,cmd.ExpireTime)
+		_, cmd.Error = c.recvResponse()
+		return
+	}
 	panic("unknown cmd name " + cmd.Name)
 }
 
@@ -99,6 +111,9 @@ func (c *tcpClient) PipelinedRun(cmds []*Cmd) {
 		}
 		if cmd.Name == "del" {
 			c.sendDel(cmd.Key)
+		}
+		if cmd.Name == "setT"{
+			c.sendSetWithTime(cmd.Key,cmd.Value,cmd.ExpireTime)
 		}
 	}
 	for _, cmd := range cmds {
