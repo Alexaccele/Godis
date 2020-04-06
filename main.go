@@ -2,6 +2,7 @@ package main
 
 import (
 	"Godis/cache"
+	"Godis/cluster"
 	"Godis/config"
 	"Godis/http"
 	"Godis/tcp"
@@ -17,12 +18,16 @@ var (
 	httpPort string
 	tcpPort  string
 	s        string
+	n        string
+	clust    string
 )
 
 func init() {
-	flag.StringVar(&httpPort, "http-port", "9090", "HTTP服务监听端口")
-	flag.StringVar(&tcpPort, "tcp-port", "2333", "TCP服务监听端口")
+	flag.StringVar(&httpPort, config.Config.Service.HttpPort, "9090", "HTTP服务监听端口")
+	flag.StringVar(&tcpPort, config.Config.Service.TcpPort, "2333", "TCP服务监听端口")
 	flag.StringVar(&s, "s", "tcp", "服务协议方式")
+	flag.StringVar(&n, "node", config.Config.Node.Node, "本地服务节点地址")
+	flag.StringVar(&clust, "cluster", config.Config.Node.Cluster, "加入的集群节点地址")
 }
 func main() {
 	flag.Parse()
@@ -36,10 +41,13 @@ func main() {
 	if cache.ExpireCycle > 0 {
 		go cache.Expirer()
 	}
-
+	node, err := cluster.New(n, clust)
+	if err != nil {
+		panic(err)
+	}
 	var wg sync.WaitGroup
-	StartTCPServer(ctx, &wg, cache)
-	StartHTTPServer(ctx, &wg, cache)
+	StartTCPServer(ctx, &wg, cache, node)
+	StartHTTPServer(ctx, &wg, cache, node)
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -60,14 +68,14 @@ func main() {
 	//}
 }
 
-func StartTCPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB) {
+func StartTCPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB, node cluster.Node) {
 	defer wg.Done()
 	wg.Add(1)
-	go tcp.NewServer(cache).Listen(config.Config.Service.TcpPort, ctx)
+	go tcp.NewServer(cache, node).Listen(tcpPort, ctx)
 }
 
-func StartHTTPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB) {
+func StartHTTPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB, node cluster.Node) {
 	defer wg.Done()
 	wg.Add(1)
-	go http.NewServer(cache).Listen(config.Config.Service.HttpPort, ctx)
+	go http.NewServer(cache, node).Listen(httpPort, ctx)
 }

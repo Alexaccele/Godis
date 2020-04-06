@@ -13,9 +13,11 @@ package tcp
 */
 import (
 	"Godis/cache"
+	"Godis/cluster"
 	"Godis/config"
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -27,6 +29,7 @@ import (
 
 type Server struct {
 	cache.Cache
+	cluster.Node
 }
 
 type result struct {
@@ -34,12 +37,12 @@ type result struct {
 	err error
 }
 
-func NewServer(c cache.Cache) *Server {
-	return &Server{c}
+func NewServer(c cache.Cache, node cluster.Node) *Server {
+	return &Server{c, node}
 }
 
 func (s *Server) Listen(port string, ctx context.Context) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.Addr(), port))
 	//listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		log.Printf("监听端口%v失败\nerror:%v\n", port, err)
@@ -122,6 +125,7 @@ func (s *Server) process(conn net.Conn) {
 		}
 		switch op {
 		case 'S':
+			log.Printf("操作%v\n", string(op))
 			err = s.set(conn, reader)
 		case 'G':
 			err = s.get(conn, reader)
@@ -130,7 +134,7 @@ func (s *Server) process(conn net.Conn) {
 		case 'T':
 			err = s.setWithTime(conn, reader)
 		default:
-			log.Printf("错误操作%v\n", op)
+			log.Printf("错误操作%v\n", string(op))
 			return
 		}
 		if err != nil {
@@ -159,7 +163,12 @@ func (s *Server) readKey(r *bufio.Reader) (string, error) {
 	if err != nil || n != keyLen {
 		return "", err
 	}
-	return string(key), nil
+	k := string(key)
+	addr, ok := s.ShouldProcess(k)
+	if !ok {
+		return "", errors.New("redirect:" + addr)
+	}
+	return k, nil
 }
 
 func (s *Server) readKeyAndValue(r *bufio.Reader) (string, []byte, error) {
@@ -177,11 +186,17 @@ func (s *Server) readKeyAndValue(r *bufio.Reader) (string, []byte, error) {
 	if err != nil || n != keyLen {
 		return "", nil, err
 	}
+	k := string(key)
 	n, err = io.ReadFull(r, value)
 	if err != nil || n != valueLen {
 		return "", nil, err
 	}
-	return string(key), value, nil
+	//先读完bufio中的内容，再验证是否应该是当前节点处理，防止后续服务端读到错误操作内容
+	addr, ok := s.ShouldProcess(k)
+	if !ok {
+		return "", nil, errors.New("redirect:" + addr)
+	}
+	return k, value, nil
 }
 
 //响应查询结果
@@ -189,8 +204,7 @@ func (s *Server) readKeyAndValue(r *bufio.Reader) (string, []byte, error) {
 //正常应该直接写入<valueLen><sp><value>
 func sendResponse(value []byte, conn net.Conn, err error) error {
 	if err != nil {
-		conn.Write([]byte(fmt.Sprintf("-%d ")))
-		_, err = conn.Write([]byte(err.Error()))
+		_, err := conn.Write([]byte(fmt.Sprintf("-%d %s", len(err.Error()), err.Error())))
 		return err
 	}
 	conn.Write([]byte(fmt.Sprintf("%d ", len(value))))
@@ -209,6 +223,9 @@ func (s *Server) get(conn net.Conn, r *bufio.Reader) error {
 
 func (s *Server) set(conn net.Conn, r *bufio.Reader) error {
 	key, val, err := s.readKeyAndValue(r)
+	if err != nil && strings.Contains(err.Error(), "redirect") {
+		return sendResponse(nil, conn, err)
+	}
 	if err != nil {
 		return err
 	}
@@ -312,9 +329,15 @@ func (s *Server) readKeyAndValueAndTime(r *bufio.Reader) (string, []byte, time.D
 	if err != nil || n != valueLen {
 		return "", nil, -1, err
 	}
+	//先读完bufio中的内容，再验证是否应该是当前节点处理，防止后续服务端读到错误操作内容
+	k := string(key)
+	addr, ok := s.ShouldProcess(k)
+	if !ok {
+		return "", nil, 0, errors.New("redict:" + addr)
+	}
 	expireTime, err := strconv.Atoi(string(t))
 	if err != nil || expireTime < 0 {
 		return "", nil, -1, err
 	}
-	return string(key), value, time.Duration(expireTime), nil
+	return k, value, time.Duration(expireTime), nil
 }

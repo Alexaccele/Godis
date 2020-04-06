@@ -26,10 +26,17 @@ type FDBConfig struct {
 	FDBDuration int64
 }
 
+//分布式节点配置
+type NodeConifg struct {
+	Node    string
+	Cluster string
+}
+
 type GlobalConfig struct {
 	Service        ServiceConfig
 	ExpireStrategy ExpireStrategyConfig
 	FDB            FDBConfig
+	Node           NodeConifg
 }
 
 var Config GlobalConfig
