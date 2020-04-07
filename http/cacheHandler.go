@@ -2,6 +2,7 @@ package http
 
 import (
 	"Godis/cache"
+	"Godis/config"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -32,7 +33,7 @@ func (c *cacheHandle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = c.Set(key, cache.Value{bytes, time.Now(), 0}) //http服务方式不支持设置过期时间
+		err = c.Set(key, cache.Value{bytes, time.Now(), time.Duration(config.Config.ExpireStrategy.DefaultExpireTime) * time.Second})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

@@ -197,3 +197,49 @@ func (i *InMemCache) KeysAndValues() ([]string, []Value) {
 	}
 	return keys, values
 }
+
+type inMemCacheScanner struct {
+	entry
+	entryCh chan *entry
+	closeCh chan struct{}
+}
+
+func (s *inMemCacheScanner) Close() {
+	close(s.closeCh)
+}
+
+func (s *inMemCacheScanner) Scan() bool {
+	ent, ok := <-s.entryCh
+	if ok {
+		s.key, s.Val = ent.key, ent.Val
+	}
+	return ok
+}
+
+func (s *inMemCacheScanner) Key() string {
+	return s.key
+}
+
+func (s *inMemCacheScanner) Value() []byte {
+	return s.Val
+}
+
+func (c *InMemCache) NewScanner() Scanner {
+	entryCh := make(chan *entry)
+	closeCh := make(chan struct{})
+	go func() {
+		defer close(entryCh)
+		c.lock.RLock()
+		for k, v := range c.memCache {
+			c.lock.RUnlock()
+			select {
+			case <-closeCh:
+				return
+			case entryCh <- &entry{k, v.Value.(*entry).Value}:
+			}
+			c.lock.RLock()
+		}
+		c.lock.RUnlock()
+	}()
+	return &inMemCacheScanner{entry{}, entryCh, closeCh}
+}

@@ -21,13 +21,16 @@ func (s *Server) Listen(port string, ctx context.Context) {
 	http.Handle("/cache/", s.cacheHandle())
 	http.Handle("/status", s.statusHandle())
 	http.Handle("/cluster", s.clusterHandle())
-	server := &http.Server{Addr: fmt.Sprintf(":%v", port), Handler: nil}
+	http.Handle("/rebalance", s.rebalanceHandle())
+	addr := fmt.Sprintf(":%v", port)
+	server := &http.Server{Addr: addr, Handler: nil}
 	go func() {
 		select {
 		case <-ctx.Done():
 			server.Shutdown(ctx)
 		}
 	}()
+	//log.Printf("http监听地址：%v\n",addr)
 	server.ListenAndServe()
 }
 
@@ -41,4 +44,8 @@ func (s *Server) statusHandle() http.Handler {
 
 func (s *Server) clusterHandle() http.Handler {
 	return &clusterHandler{s}
+}
+
+func (s *Server) rebalanceHandle() http.Handler {
+	return &rebalanceHandler{s}
 }

@@ -8,6 +8,8 @@ import (
 	"Godis/tcp"
 	"context"
 	"flag"
+	"github.com/BurntSushi/toml"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,22 +17,27 @@ import (
 )
 
 var (
-	httpPort string
-	tcpPort  string
-	s        string
-	n        string
-	clust    string
+	//httpPort string
+	//tcpPort  string
+	//s        string
+	//n        string
+	//clust    string
+	conf string
 )
 
 func init() {
-	flag.StringVar(&httpPort, config.Config.Service.HttpPort, "9090", "HTTP服务监听端口")
-	flag.StringVar(&tcpPort, config.Config.Service.TcpPort, "2333", "TCP服务监听端口")
-	flag.StringVar(&s, "s", "tcp", "服务协议方式")
-	flag.StringVar(&n, "node", config.Config.Node.Node, "本地服务节点地址")
-	flag.StringVar(&clust, "cluster", config.Config.Node.Cluster, "加入的集群节点地址")
+	flag.StringVar(&conf, "conf", "config.toml", "指定配置文件")
+	//flag.StringVar(&httpPort, config.Config.Service.HttpPort, "9090", "HTTP服务监听端口")
+	//flag.StringVar(&tcpPort, config.Config.Service.TcpPort, "2333", "TCP服务监听端口")
+	//flag.StringVar(&s, "s", "tcp", "服务协议方式")
+	//flag.StringVar(&n, "node", config.Config.Node.Node, "本地服务节点地址")
+	//flag.StringVar(&clust, "cluster", config.Config.Node.Cluster, "加入的集群节点地址")
 }
 func main() {
 	flag.Parse()
+	if _, err := toml.DecodeFile(conf, &config.Config); err != nil {
+		log.Fatalf("读取配置文件config.toml失败,error:%v", err)
+	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cache := cache.NewInMemCacheWithFDB(config.Config.FDB.FDBDuration,
 		(1<<20)*config.Config.ExpireStrategy.MemoryThreshold,
@@ -41,7 +48,7 @@ func main() {
 	if cache.ExpireCycle > 0 {
 		go cache.Expirer()
 	}
-	node, err := cluster.New(n, clust)
+	node, err := cluster.New(config.Config.Node.Node, config.Config.Node.Cluster, config.Config.Service.HttpPort)
 	if err != nil {
 		panic(err)
 	}
@@ -71,11 +78,11 @@ func main() {
 func StartTCPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB, node cluster.Node) {
 	defer wg.Done()
 	wg.Add(1)
-	go tcp.NewServer(cache, node).Listen(tcpPort, ctx)
+	go tcp.NewServer(cache, node).Listen(config.Config.Service.TcpPort, ctx)
 }
 
 func StartHTTPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB, node cluster.Node) {
 	defer wg.Done()
 	wg.Add(1)
-	go http.NewServer(cache, node).Listen(httpPort, ctx)
+	go http.NewServer(cache, node).Listen(config.Config.Service.HttpPort, ctx)
 }

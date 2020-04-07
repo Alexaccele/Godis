@@ -42,12 +42,14 @@ func NewServer(c cache.Cache, node cluster.Node) *Server {
 }
 
 func (s *Server) Listen(port string, ctx context.Context) {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.Addr(), port))
+	addr := fmt.Sprintf("%s:%s", strings.Split(s.Addr(), ":")[0], port)
+	listener, err := net.Listen("tcp", addr)
 	//listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		log.Printf("监听端口%v失败\nerror:%v\n", port, err)
 		return
 	}
+	//log.Printf("tcp监听地址：%s\n",addr)
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -125,7 +127,6 @@ func (s *Server) process(conn net.Conn) {
 		}
 		switch op {
 		case 'S':
-			log.Printf("操作%v\n", string(op))
 			err = s.set(conn, reader)
 		case 'G':
 			err = s.get(conn, reader)

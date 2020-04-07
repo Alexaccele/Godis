@@ -1,8 +1,6 @@
 package config
 
 import (
-	"github.com/BurntSushi/toml"
-	"log"
 	"time"
 )
 
@@ -24,6 +22,7 @@ type ExpireStrategyConfig struct {
 //持久化配置
 type FDBConfig struct {
 	FDBDuration int64
+	FileName    string
 }
 
 //分布式节点配置
@@ -40,9 +39,3 @@ type GlobalConfig struct {
 }
 
 var Config GlobalConfig
-
-func init() {
-	if _, err := toml.DecodeFile("config.toml", &Config); err != nil {
-		log.Fatalf("读取配置文件config.toml失败,error:%v", err)
-	}
-}

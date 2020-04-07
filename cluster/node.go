@@ -15,7 +15,7 @@ type Node interface {
 
 type node struct {
 	*consistent.Consistent
-	addr string
+	addr string //包含地址与端口
 }
 
 func (n *node) Addr() string {
@@ -24,13 +24,14 @@ func (n *node) Addr() string {
 
 func (n *node) ShouldProcess(key string) (string, bool) {
 	addr, _ := n.Get(key)
+	//log.Printf("addr:%v,n.addr:%v\n",addr,n.addr)
 	return addr, addr == n.addr
 }
 
 //基于gossip协议，创建一致性哈希环
-func New(addr, cluster string) (Node, error) {
+func New(addr, cluster, httpPort string) (Node, error) {
 	config := memberlist.DefaultLANConfig()
-	config.Name = addr
+	config.Name = addr + ":" + httpPort //将http的端口信息包含进去，方便后续取出
 	config.BindAddr = addr
 	config.LogOutput = ioutil.Discard //抛弃日志
 	c, err := memberlist.Create(config)
@@ -58,5 +59,5 @@ func New(addr, cluster string) (Node, error) {
 			time.Sleep(time.Second)
 		}
 	}()
-	return &node{circle, addr}, nil
+	return &node{circle, addr + ":" + httpPort}, nil
 }

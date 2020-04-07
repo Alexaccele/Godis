@@ -7,7 +7,7 @@ service_type= "tcp"
 ##服务端口号##
 tcp-port = "2333"
 
-http-port = "9090"
+http-port = "9092"
 
 ##过期策略##
 [ExpireStrategy]
@@ -32,8 +32,8 @@ DefaultExpireTime = 0
 ##持久化备份间隔时间##
 ##以second为单位，配置5，表示每个5s备份一次缓存
 FDBDuration = 5         #单位s
-FileName = "dump.fdb"
+FileName = "dump3.fdb"
 
 [Node]
-Node = "127.0.0.1"
-Cluster = ""
+Node = "127.0.0.3"
+Cluster = "127.0.0.1"
