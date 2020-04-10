@@ -44,6 +44,9 @@ func (r *RandVolatile) MakeSpace(cache *InMemCache) {
 			continue
 		}
 	}
+	if count == 0 {
+		cache.removeOldest() //当没有带过期时间的键值对时，采用LRU策略
+	}
 }
 
 /*
