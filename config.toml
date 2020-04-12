@@ -21,7 +21,7 @@ MemoryThreshold = 100   #单位M
 
 ##定期删除过期缓存周期##
 ##以second为单位,配置5，表示每隔5s扫描缓存并删除过期键值对
-ExpireCycle = 5         #单位s
+ExpireCycle = 5        #单位s
 
 ##默认键值对过期时间##
 ##以second为单位

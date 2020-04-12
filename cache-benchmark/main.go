@@ -149,14 +149,14 @@ func init() {
 	flag.IntVar(&pipelen, "P", 1, "pipeline length")
 	flag.Parse()
 	fmt.Println("type is", typ)
-	fmt.Println("server is", server)
-	fmt.Println("port is", port)
+	//fmt.Println("server is", server)
+	//fmt.Println("port is", port)
 	fmt.Println("total", total, "requests")
 	fmt.Println("data size is", valueSize)
-	fmt.Println("we have", threads, "connections")
-	fmt.Println("operation is", operation)
-	fmt.Println("keyspacelen is", keyspacelen)
-	fmt.Println("pipeline length is", pipelen)
+	//fmt.Println("we have", threads, "connections")
+	//fmt.Println("operation is", operation)
+	//fmt.Println("keyspacelen is", keyspacelen)
+	//fmt.Println("pipeline length is", pipelen)
 
 	rand.Seed(time.Now().UnixNano())
 }
@@ -173,10 +173,10 @@ func main() {
 	}
 	d := time.Now().Sub(start)
 	totalCount := res.getCount + res.missCount + res.setCount
-	fmt.Printf("%d records get\n", res.getCount)
-	fmt.Printf("%d records miss\n", res.missCount)
-	fmt.Printf("%d records set\n", res.setCount)
-	fmt.Printf("%f seconds total\n", d.Seconds())
+	//fmt.Printf("%d records get\n", res.getCount)
+	//fmt.Printf("%d records miss\n", res.missCount)
+	//fmt.Printf("%d records set\n", res.setCount)
+	//fmt.Printf("%f seconds total\n", d.Seconds())
 	statCountSum := 0
 	statTimeSum := time.Duration(0)
 	for b, s := range res.statBuckets {

@@ -285,7 +285,7 @@ func (s *Server) setWithTimeWithAsync(ch chan chan *result, r *bufio.Reader) {
 		return
 	}
 	go func() {
-		c <- &result{nil, s.Set(key, cache.Value{val, time.Now(), expireTime})}
+		c <- &result{nil, s.Set(key, cache.Value{val, time.Now(), time.Second * expireTime})}
 	}()
 }
 
@@ -327,7 +327,7 @@ func (s *Server) readKeyAndValueAndTime(r *bufio.Reader) (string, []byte, time.D
 		return "", nil, -1, err
 	}
 	n, err = io.ReadFull(r, t)
-	if err != nil || n != valueLen {
+	if err != nil || n != timeLen { //修复判断长度变量错误
 		return "", nil, -1, err
 	}
 	//先读完bufio中的内容，再验证是否应该是当前节点处理，防止后续服务端读到错误操作内容

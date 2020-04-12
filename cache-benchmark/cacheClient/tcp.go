@@ -31,7 +31,7 @@ func (c *tcpClient) sendSetWithTime(key, value, expireTime string) {
 	klen := len(key)
 	vlen := len(value)
 	timeLen := len(expireTime)
-	c.Write([]byte(fmt.Sprintf("T%d %d %d%s%s%s", klen, vlen, timeLen, key, value, expireTime)))
+	c.Write([]byte(fmt.Sprintf("T%d %d %d %s%s%s", klen, vlen, timeLen, key, value, expireTime))) //修复格式问题
 }
 
 func (c *tcpClient) sendDel(key string) {
