@@ -138,7 +138,7 @@ var typ, server, port, operation string
 var total, valueSize, threads, keyspacelen, pipelen int
 
 func init() {
-	flag.StringVar(&typ, "type", "redis", "cache server type")
+	flag.StringVar(&typ, "type", "http", "cache server type")
 	flag.StringVar(&server, "h", "localhost", "cache server address")
 	flag.StringVar(&port, "p", "2333", "server port")
 	flag.IntVar(&total, "n", 1000, "total number of requests")

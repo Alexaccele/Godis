@@ -63,7 +63,7 @@ func (s *Server) Listen(port string, ctx context.Context) {
 			continue
 		}
 		//log.Printf("客户端连接成功 %v\n",conn.RemoteAddr())
-		go s.processWithAsync(conn)
+		go s.process(conn)
 	}
 }
 
