@@ -13,11 +13,15 @@ http-port = "9090"
 [ExpireStrategy]
 ##过期策略类型##
 ##可选项："LRUAll"/"RandAll"/"RandVolatile"
-strategy = "LRUAll"
+strategy = "RandVolatile"
 
 ##内存限制阈值##
 ##以M为单位，配置100，表示内存限制为100M
-MemoryThreshold = 1024   #单位M
+MemoryThreshold = 10   #单位M
+
+## 内存限制单位##
+##可选：B KB MB GB
+MemoryUnit = "B"
 
 ##定期删除过期缓存周期##
 ##以second为单位,配置5，表示每隔5s扫描缓存并删除过期键值对

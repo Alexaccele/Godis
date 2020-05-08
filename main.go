@@ -17,30 +17,28 @@ import (
 )
 
 var (
-	//httpPort string
-	//tcpPort  string
-	//s        string
-	//n        string
-	//clust    string
-	conf string
+	conf       string
+	memoryUnit map[string]int64
 )
 
 func init() {
 	flag.StringVar(&conf, "conf", "config.toml", "指定配置文件")
-	//flag.StringVar(&httpPort, config.Config.Service.HttpPort, "9090", "HTTP服务监听端口")
-	//flag.StringVar(&tcpPort, config.Config.Service.TcpPort, "2333", "TCP服务监听端口")
-	//flag.StringVar(&s, "s", "tcp", "服务协议方式")
-	//flag.StringVar(&n, "node", config.Config.Node.Node, "本地服务节点地址")
-	//flag.StringVar(&clust, "cluster", config.Config.Node.Cluster, "加入的集群节点地址")
+	memoryUnit = map[string]int64{
+		"B":  1 << 0,
+		"KB": 1 << 10,
+		"MB": 1 << 20,
+		"GB": 1 << 30,
+	}
 }
 func main() {
 	flag.Parse()
 	if _, err := toml.DecodeFile(conf, &config.Config); err != nil {
 		log.Fatalf("读取配置文件config.toml失败,error:%v", err)
 	}
+
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cache := cache.NewInMemCacheWithFDB(config.Config.FDB.FDBDuration,
-		(1<<20)*config.Config.ExpireStrategy.MemoryThreshold,
+		memoryUnit[config.Config.ExpireStrategy.MemoryUnit]*config.Config.ExpireStrategy.MemoryThreshold, //单位 * 阈值
 		config.Config.ExpireStrategy.ExpireCycle,
 		cache.NewExpireStrategy(config.Config.ExpireStrategy.Strategy)) //持久化周期5s,0表示无内存限制，30s默认检查过期时间
 	cache.LoadCacheFromFDB()
@@ -64,15 +62,6 @@ func main() {
 		wg.Wait()
 		os.Exit(0)
 	}
-	//switch config.Config.Service.ServiceType {
-	//case "tcp":
-	//	tcp.NewServer(cache).Listen(config.Config.Service.TcpPort) //tcp服务,默认的服务方式，比HTTP效率高
-	//case "http":
-	//	http.NewServer(cache).Listen(config.Config.Service.HttpPort) //http服务
-	//default:
-	//	fmt.Errorf("未支持服务类型 %v\n", s)
-	//	return
-	//}
 }
 
 func StartTCPServer(ctx context.Context, wg *sync.WaitGroup, cache *cache.InMemCacheWithFDB, node cluster.Node) {

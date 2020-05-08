@@ -13,12 +13,17 @@ type ExpireStrategy interface {
 type RandAll struct{}
 
 func (r *RandAll) MakeSpace(cache *InMemCache) {
-	toDelCount := 10
+	toDelCount := cache.Count / 10 //默认淘汰10%的数据
+	if toDelCount <= 0 {
+		toDelCount = 1
+	}
 	count := 0
 	for k, _ := range cache.memCache { //golang 实现的for-range map是随机化的，故直接遍历
 		if count < toDelCount {
-			cache.Del(k)
-			count++
+			if ent, exist := cache.memCache[k]; exist {
+				cache.removeElement(ent)
+				count++
+			}
 		}
 		break
 	}
@@ -30,13 +35,18 @@ func (r *RandAll) MakeSpace(cache *InMemCache) {
 type RandVolatile struct{}
 
 func (r *RandVolatile) MakeSpace(cache *InMemCache) {
-	toDelCount := 10
+	toDelCount := cache.Count / 10
+	if toDelCount <= 0 {
+		toDelCount = 1
+	}
 	count := 0
 	for k, v := range cache.memCache {
 		if v.Value.(*entry).TTL > 0 {
 			if count < toDelCount {
-				cache.Del(k)
-				count++
+				if ent, exist := cache.memCache[k]; exist {
+					cache.removeElement(ent)
+					count++
+				}
 			} else {
 				break
 			}

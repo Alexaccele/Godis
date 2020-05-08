@@ -15,6 +15,7 @@ type ServiceConfig struct {
 type ExpireStrategyConfig struct {
 	Strategy          string
 	MemoryThreshold   int64
+	MemoryUnit        string
 	ExpireCycle       time.Duration
 	DefaultExpireTime int64
 }

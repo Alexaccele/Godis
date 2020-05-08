@@ -22,6 +22,7 @@ func (s *Server) Listen(port string, ctx context.Context) {
 	http.Handle("/status", s.statusHandle())
 	http.Handle("/cluster", s.clusterHandle())
 	http.Handle("/rebalance", s.rebalanceHandle())
+	http.Handle("/keys", s.keysAndValuesHandle())
 	addr := fmt.Sprintf(":%v", port)
 	server := &http.Server{Addr: addr, Handler: nil}
 	go func() {
@@ -48,4 +49,8 @@ func (s *Server) clusterHandle() http.Handler {
 
 func (s *Server) rebalanceHandle() http.Handler {
 	return &rebalanceHandler{s}
+}
+
+func (s *Server) keysAndValuesHandle() http.Handler {
+	return &keysAndValuesHandler{s}
 }
